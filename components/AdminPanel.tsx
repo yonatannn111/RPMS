@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Users } from 'lucide-react'
-import { User, Paper, Review, getPapers, getReviews, updatePaper } from '@/lib/supabase'
+import { User, Paper, Review, getPapers, getReviews, updatePaper } from '@/lib/api'
+import Header from './Header'
 
 interface AdminPanelProps {
   user: User
@@ -14,7 +15,6 @@ interface PaperWithReviews extends Paper {
 }
 
 export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
-  const [users, setUsers] = useState<User[]>([])
   const [papers, setPapers] = useState<PaperWithReviews[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,19 +29,19 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
 
       if (papersResult.success && papersResult.data) {
         // Get papers that are ready for admin approval (have reviews)
-        const papersWithReviews = papersResult.data.map((paper: any) => {
-          const paperReviews = reviewsResult.data?.filter((review: Review) => 
+        const papersWithReviews = papersResult.data.map((paper: Paper) => {
+          const paperReviews = reviewsResult.data?.filter((review: Review) =>
             review.paper_id === paper.id
           ) || []
-          
+
           return {
             ...paper,
             reviews: paperReviews
           }
-        }).filter((paper: PaperWithReviews) => 
+        }).filter((paper: PaperWithReviews) =>
           paper.status === 'under_review' && paper.reviews.length > 0
         )
-        
+
         setPapers(papersWithReviews)
       }
     } catch (error) {
@@ -56,7 +56,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
       const result = await updatePaper(paperId, {
         status: approved ? 'approved' : 'rejected'
       })
-      
+
       if (result.success) {
         setPapers(papers.filter(paper => paper.id !== paperId))
       }
@@ -76,20 +76,10 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
       acc[review.recommendation] = (acc[review.recommendation] || 0) + 1
       return acc
     }, {} as Record<string, number>)
-    
+
     return Object.entries(counts)
       .map(([rec, count]) => `${count} ${rec.replace(/_/g, ' ')}`)
       .join(', ')
-  }
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-purple-100 text-purple-800'
-      case 'editor': return 'bg-blue-100 text-blue-800'
-      case 'author': return 'bg-green-100 text-green-800'
-      case 'coordinator': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
   }
 
   if (loading) {
@@ -105,23 +95,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-red-600 text-white p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <Users className="w-8 h-8" />
-            <div>
-              <h1 className="text-xl font-bold">RPMS - Admin Panel</h1>
-              <p className="text-red-100">Welcome, {user.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={onLogout}
-            className="px-4 py-2 border border-white text-red-600 bg-white rounded-md hover:bg-red-50 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+      <Header user={user} title="Admin Panel" onLogout={onLogout} />
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="bg-white rounded-lg shadow">
@@ -170,7 +144,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="font-semibold">{paper.title}</h3>
-                        <p className="text-sm text-gray-600">Author: {(paper as any).users?.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-600">Author: {paper.author_name || 'Unknown'}</p>
                         <p className="text-sm text-gray-600">Submitted: {new Date(paper.created_at).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right">
@@ -182,31 +156,31 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
                         </p>
                       </div>
                     </div>
-                    
+
                     {paper.abstract && (
                       <p className="text-sm text-gray-700 mb-3 line-clamp-2">{paper.abstract}</p>
                     )}
-                    
+
                     <div className="bg-gray-50 p-3 rounded mb-3">
                       <p className="text-sm font-medium mb-2">Review Summary:</p>
                       <p className="text-sm text-gray-600">{getRecommendationSummary(paper.reviews)}</p>
                       <div className="mt-2 space-y-1">
                         {paper.reviews.map((review, index) => (
                           <div key={review.id} className="text-xs text-gray-600">
-                            <span className="font-medium">Reviewer {index + 1}:</span> {review.comments.substring(0, 100)}...
+                            <span className="font-medium">Reviewer {index + 1}:</span> {review.comments ? review.comments.substring(0, 100) + '...' : ''}
                           </div>
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="flex space-x-2">
-                      <button 
+                      <button
                         onClick={() => handleApproval(paper.id, true)}
                         className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
                       >
                         Approve
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleApproval(paper.id, false)}
                         className="border border-red-600 text-red-600 px-4 py-2 rounded-md hover:bg-red-50 transition-colors"
                       >

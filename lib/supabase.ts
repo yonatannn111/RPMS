@@ -38,6 +38,8 @@ export interface Paper {
   status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'published'
   created_at: string
   updated_at: string
+  author_name?: string
+  author_email?: string
 }
 
 export interface Review {
@@ -49,6 +51,9 @@ export interface Review {
   recommendation: 'accept' | 'minor_revision' | 'major_revision' | 'reject'
   created_at: string
   updated_at: string
+  reviewer_name?: string
+  reviewer_email?: string
+  paper_title?: string
 }
 
 export interface Event {
@@ -60,6 +65,8 @@ export interface Event {
   coordinator_id: string
   created_at: string
   updated_at: string
+  coordinator_name?: string
+  coordinator_email?: string
 }
 
 // Auth helper functions
@@ -108,7 +115,7 @@ export async function signOut() {
 export async function getCurrentUser() {
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) return null
 
     const { data: userData, error } = await supabase

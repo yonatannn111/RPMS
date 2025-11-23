@@ -2,24 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { FileText } from 'lucide-react'
-import { User, Paper, Review, getPapers, getReviews, createReview } from '@/lib/supabase'
+import { User, Paper, Review, getPapers, getReviews, createReview } from '@/lib/api'
+import Header from './Header'
 
 interface EditorPanelProps {
   user: User
   onLogout: () => void
 }
 
-interface PaperWithAuthor extends Paper {
-  users: {
-    name: string
-    email: string
-  }
-}
-
 export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
-  const [papers, setPapers] = useState<PaperWithAuthor[]>([])
+  const [papers, setPapers] = useState<Paper[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
-  const [selectedPaper, setSelectedPaper] = useState<PaperWithAuthor | null>(null)
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null)
   const [reviewData, setReviewData] = useState({ rating: 5, comments: '', recommendation: 'accept' as const })
   const [loading, setLoading] = useState(true)
 
@@ -34,7 +28,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
 
       if (papersResult.success && papersResult.data) {
         // Filter submitted papers that need review
-        const submittedPapers = papersResult.data.filter((paper: PaperWithAuthor) => 
+        const submittedPapers = papersResult.data.filter((paper: Paper) =>
           paper.status === 'submitted' || paper.status === 'under_review'
         )
         setPapers(submittedPapers)
@@ -75,12 +69,12 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
     }
   }
 
-  const getPaperStatus = (paper: PaperWithAuthor) => {
+  const getPaperStatus = (paper: Paper) => {
     const existingReview = reviews.find(r => r.paper_id === paper.id && r.reviewer_id === user.id)
     return existingReview ? 'reviewed' : 'pending'
   }
 
-  const getExistingReview = (paper: PaperWithAuthor) => {
+  const getExistingReview = (paper: Paper) => {
     return reviews.find(r => r.paper_id === paper.id && r.reviewer_id === user.id)
   }
 
@@ -111,23 +105,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-red-600 text-white p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-8 h-8" />
-            <div>
-              <h1 className="text-xl font-bold">RPMS - Editor Panel</h1>
-              <p className="text-red-100">Welcome, {user.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={onLogout}
-            className="px-4 py-2 border border-white text-red-600 bg-white rounded-md hover:bg-red-50 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+      <Header user={user} title="Editor Panel" onLogout={onLogout} />
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -146,26 +124,25 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                   {papers.map(paper => {
                     const status = getPaperStatus(paper)
                     const existingReview = getExistingReview(paper)
-                    
+
                     return (
                       <div key={paper.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h3 className="font-semibold">{paper.title}</h3>
-                            <p className="text-sm text-gray-600">Author: {paper.users.name}</p>
-                            <p className="text-sm text-gray-600">Email: {paper.users.email}</p>
+                            <p className="text-sm text-gray-600">Author: {paper.author_name || 'Unknown'}</p>
+                            <p className="text-sm text-gray-600">Email: {paper.author_email || 'Unknown'}</p>
                             <p className="text-sm text-gray-600">Submitted: {new Date(paper.created_at).toLocaleDateString()}</p>
                             {paper.abstract && (
                               <p className="text-sm text-gray-700 mt-2 line-clamp-2">{paper.abstract}</p>
                             )}
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-sm ${
-                            status === 'reviewed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-sm ${status === 'reviewed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {status === 'reviewed' ? 'Reviewed' : 'Pending'}
                           </span>
                         </div>
-                        
+
                         {existingReview && (
                           <div className="mt-3 p-3 bg-gray-50 rounded">
                             <div className="flex justify-between items-start mb-2">
@@ -179,9 +156,9 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                             </div>
                           </div>
                         )}
-                        
+
                         {status === 'pending' && (
-                          <button 
+                          <button
                             onClick={() => setSelectedPaper(paper)}
                             className="mt-3 bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition-colors text-sm"
                           >
@@ -200,7 +177,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b">
                 <h2 className="text-xl font-semibold text-red-600">Review: {selectedPaper.title}</h2>
-                <p className="text-sm text-gray-600">Author: {selectedPaper.users.name}</p>
+                <p className="text-sm text-gray-600">Author: {selectedPaper.author_name || 'Unknown'}</p>
               </div>
               <div className="p-6">
                 {selectedPaper.abstract && (
@@ -209,7 +186,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                     <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{selectedPaper.abstract}</p>
                   </div>
                 )}
-                
+
                 <form onSubmit={handleSubmitReview} className="space-y-4">
                   <div>
                     <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-2">
@@ -218,15 +195,15 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                     <select
                       id="rating"
                       value={reviewData.rating}
-                      onChange={(e) => setReviewData({...reviewData, rating: parseInt(e.target.value)})}
+                      onChange={(e) => setReviewData({ ...reviewData, rating: parseInt(e.target.value) })}
                       className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     >
-                      {[1,2,3,4,5].map(num => (
+                      {[1, 2, 3, 4, 5].map(num => (
                         <option key={num} value={num}>{num}</option>
                       ))}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="recommendation" className="block text-sm font-medium text-gray-700 mb-2">
                       Recommendation
@@ -234,7 +211,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                     <select
                       id="recommendation"
                       value={reviewData.recommendation}
-                      onChange={(e) => setReviewData({...reviewData, recommendation: e.target.value as any})}
+                      onChange={(e) => setReviewData({ ...reviewData, recommendation: e.target.value as any })}
                       className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     >
                       <option value="accept">Accept</option>
@@ -243,7 +220,7 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                       <option value="reject">Reject</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="comments" className="block text-sm font-medium text-gray-700 mb-2">
                       Comments
@@ -252,12 +229,12 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
                       id="comments"
                       className="w-full p-3 border border-gray-300 rounded-md min-h-[120px] focus:ring-2 focus:ring-red-500 focus:border-red-500"
                       value={reviewData.comments}
-                      onChange={(e) => setReviewData({...reviewData, comments: e.target.value})}
+                      onChange={(e) => setReviewData({ ...reviewData, comments: e.target.value })}
                       placeholder="Provide detailed feedback..."
                       required
                     />
                   </div>
-                  
+
                   <div className="flex space-x-2">
                     <button
                       type="submit"

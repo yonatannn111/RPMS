@@ -2,24 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { Calendar } from 'lucide-react'
-import { User, Event, getEvents, createEvent, updateEvent, deleteEvent } from '@/lib/supabase'
+import { User, Event, getEvents, createEvent, updateEvent, deleteEvent } from '@/lib/api'
+import Header from './Header'
 
 interface CoordinatorDashboardProps {
   user: User
   onLogout: () => void
 }
 
-interface EventWithCoordinator extends Event {
-  users: {
-    name: string
-    email: string
-  }
-}
-
 export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDashboardProps) {
-  const [events, setEvents] = useState<EventWithCoordinator[]>([])
+  const [events, setEvents] = useState<Event[]>([])
   const [showEventForm, setShowEventForm] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<EventWithCoordinator | null>(null)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '', location: '' })
   const [loading, setLoading] = useState(true)
 
@@ -32,7 +26,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
       const result = await getEvents()
       if (result.success && result.data) {
         // Filter events for current coordinator
-        const coordinatorEvents = result.data.filter((event: EventWithCoordinator) => 
+        const coordinatorEvents = result.data.filter((event: Event) =>
           event.coordinator_id === user.id
         )
         setEvents(coordinatorEvents)
@@ -80,8 +74,8 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
         })
 
         if (result.success && result.data) {
-          setEvents(events.map(event => 
-            event.id === editingEvent.id ? result.data : event
+          setEvents(events.map(event =>
+            event.id === editingEvent.id ? result.data! : event
           ))
           setEditingEvent(null)
           setNewEvent({ title: '', description: '', date: '', location: '' })
@@ -103,7 +97,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
     }
   }
 
-  const startEditEvent = (event: EventWithCoordinator) => {
+  const startEditEvent = (event: Event) => {
     setEditingEvent(event)
     setNewEvent({
       title: event.title,
@@ -123,7 +117,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
   const getEventStatus = (eventDate: string) => {
     const today = new Date()
     const event = new Date(eventDate)
-    
+
     if (event < today) return 'past'
     if (event.toDateString() === today.toDateString()) return 'today'
     return 'upcoming'
@@ -160,23 +154,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-red-600 text-white p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <Calendar className="w-8 h-8" />
-            <div>
-              <h1 className="text-xl font-bold">RPMS - Event Coordinator</h1>
-              <p className="text-red-100">Welcome, {user.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={onLogout}
-            className="px-4 py-2 border border-white text-red-600 bg-white rounded-md hover:bg-red-50 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+      <Header user={user} title="Coordinator Dashboard" onLogout={onLogout} />
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="bg-white rounded-lg shadow">
@@ -213,7 +191,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
                           {status}
                         </span>
                       </div>
-                      
+
                       <div className="text-sm text-gray-600 space-y-2 mb-3">
                         <p className="flex items-center">
                           <Calendar className="w-4 h-4 mr-2" />
@@ -226,11 +204,11 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
                           </p>
                         )}
                       </div>
-                      
+
                       {event.description && (
                         <p className="text-sm text-gray-700 mb-3 line-clamp-3">{event.description}</p>
                       )}
-                      
+
                       <div className="flex space-x-2">
                         <button
                           onClick={() => startEditEvent(event)}
@@ -270,55 +248,51 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
                     id="eventTitle"
                     type="text"
                     value={newEvent.title}
-                    onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                     placeholder="Enter event title"
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     required
                   />
                 </div>
-                
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Date & Time
+                  </label>
+                  <input
+                    id="eventDate"
+                    type="datetime-local"
+                    value={newEvent.date}
+                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="eventLocation" className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <input
+                    id="eventLocation"
+                    type="text"
+                    value={newEvent.location}
+                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                    placeholder="Enter event location"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="eventDescription" className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
                   <textarea
-                    id="description"
+                    id="eventDescription"
                     value={newEvent.description}
-                    onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                     placeholder="Enter event description"
                     rows={4}
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Event Date
-                  </label>
-                  <input
-                    id="eventDate"
-                    type="date"
-                    value={newEvent.date}
-                    onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="venue" className="block text-sm font-medium text-gray-700 mb-2">
-                    Venue
-                  </label>
-                  <input
-                    id="venue"
-                    type="text"
-                    value={newEvent.location}
-                    onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
-                    placeholder="Enter venue"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  />
-                </div>
-                
                 <div className="flex space-x-2">
                   <button
                     type="submit"
