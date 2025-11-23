@@ -7,13 +7,16 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID `json:"id" db:"id"`
-	Email        string    `json:"email" db:"email"`
-	PasswordHash string    `json:"-" db:"password_hash"`
-	Name         string    `json:"name" db:"name"`
-	Role         string    `json:"role" db:"role"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	ID           uuid.UUID              `json:"id" db:"id"`
+	Email        string                 `json:"email" db:"email"`
+	PasswordHash string                 `json:"-" db:"password_hash"`
+	Name         string                 `json:"name" db:"name"`
+	Role         string                 `json:"role" db:"role"`
+	Avatar       string                 `json:"avatar" db:"avatar"`
+	Bio          string                 `json:"bio" db:"bio"`
+	Preferences  map[string]interface{} `json:"preferences" db:"preferences"`
+	CreatedAt    time.Time              `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at" db:"updated_at"`
 }
 
 type CreateUserRequest struct {
@@ -26,7 +29,6 @@ type CreateUserRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
-	Role     string `json:"role" binding:"required,oneof=author editor admin coordinator"`
 }
 
 type LoginResponse struct {
@@ -34,9 +36,16 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-type UpdateUserRequest struct {
-	Name string `json:"name" binding:"required"`
-	Role string `json:"role" binding:"required,oneof=author editor admin coordinator"`
+type UpdateProfileRequest struct {
+	Name        string                 `json:"name"`
+	Avatar      string                 `json:"avatar"`
+	Bio         string                 `json:"bio"`
+	Preferences map[string]interface{} `json:"preferences"`
+}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
 
 func (u *User) IsRole(role string) bool {

@@ -40,6 +40,9 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 		{
 			// User routes
 			protected.GET("/profile", server.GetProfile)
+			protected.PUT("/profile", server.UpdateProfile)
+			protected.PUT("/auth/password", server.ChangePassword)
+			protected.DELETE("/auth/account", server.DeleteAccount)
 
 			// Paper routes
 			papers := protected.Group("/papers")

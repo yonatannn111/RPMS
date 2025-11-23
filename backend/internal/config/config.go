@@ -40,7 +40,7 @@ func New() *Config {
 			User:     getEnv("DB_USER", "postgres"),
 			Password: getEnv("DB_PASSWORD", ""),
 			DBName:   getEnv("DB_NAME", "rpms_db"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			SSLMode:  getEnv("DB_SSLMODE", "require"),
 		},
 		Supabase: SupabaseConfig{
 			URL:            getEnv("SUPABASE_URL", ""),
