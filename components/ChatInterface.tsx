@@ -47,12 +47,24 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
     const fetchContacts = async () => {
         try {
+            console.log('[ChatInterface] Fetching contacts...')
             const result = await getContacts()
+            console.log('[ChatInterface] GetContacts result:', result)
+            console.log('[ChatInterface] result.success:', result.success)
+            console.log('[ChatInterface] result.data:', result.data)
+            console.log('[ChatInterface] Is array?:', Array.isArray(result.data))
+
             if (result.success && result.data) {
-                setContacts(result.data)
+                const contactsArray = Array.isArray(result.data) ? result.data : []
+                console.log('[ChatInterface] Setting contacts:', contactsArray)
+                setContacts(contactsArray)
+            } else {
+                console.log('[ChatInterface] No data or not successful')
+                setContacts([])
             }
         } catch (error) {
-            console.error('Failed to fetch contacts:', error)
+            console.error('[ChatInterface] Failed to fetch contacts:', error)
+            setContacts([])
         } finally {
             setLoading(false)
         }
@@ -216,8 +228,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                             <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                 <div
                                                     className={`max-w-[70%] rounded-lg p-3 ${isMe
-                                                            ? 'bg-red-600 text-white rounded-br-none'
-                                                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border dark:border-gray-600 rounded-bl-none'
+                                                        ? 'bg-red-600 text-white rounded-br-none'
+                                                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border dark:border-gray-600 rounded-bl-none'
                                                         }`}
                                                 >
                                                     <p className="text-sm">{msg.content}</p>

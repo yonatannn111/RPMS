@@ -7,8 +7,21 @@ import (
 	"rpms-backend/internal/database"
 	"rpms-backend/internal/models"
 
+	"fmt"
+	"os"
+
 	"github.com/gin-gonic/gin"
 )
+
+func logDebug(format string, a ...interface{}) {
+	f, err := os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	msg := fmt.Sprintf(format, a...)
+	f.WriteString(time.Now().Format(time.RFC3339) + " " + msg + "\n")
+}
 
 type ChatHandler struct {
 	db *database.Database
@@ -57,7 +70,7 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "data": msg})
+	c.JSON(http.StatusCreated, msg)
 }
 
 // GetMessages retrieves messages between current user and another user
@@ -102,13 +115,18 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 		messages = append(messages, msg)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": messages})
+	if messages == nil {
+		messages = []models.Message{}
+	}
+	c.JSON(http.StatusOK, messages)
 }
 
 // GetContacts retrieves list of users the current user can chat with
 func (h *ChatHandler) GetContacts(c *gin.Context) {
 	userID := c.GetString("userID")
 	userRole := c.GetString("userRole")
+
+	logDebug("GetContacts called. UserID: %s, Role: %s", userID, userRole)
 
 	var roleFilter string
 
@@ -127,9 +145,12 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 		// Admin can chat with Editor and Coordinator
 		roleFilter = "('editor', 'coordinator')"
 	default:
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": []models.Contact{}})
+		logDebug("Invalid role: %s", userRole)
+		c.JSON(http.StatusOK, []models.Contact{})
 		return
 	}
+
+	logDebug("Role filter: %s", roleFilter)
 
 	query := `
 		SELECT id, name, email, role, avatar
@@ -140,6 +161,7 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 
 	rows, err := h.db.Query(c.Request.Context(), query, userID)
 	if err != nil {
+		logDebug("Query failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch contacts"})
 		return
 	}
@@ -149,6 +171,7 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 	for rows.Next() {
 		var contact models.Contact
 		if err := rows.Scan(&contact.ID, &contact.Name, &contact.Email, &contact.Role, &contact.Avatar); err != nil {
+			logDebug("Scan failed: %v", err)
 			continue
 		}
 
@@ -176,5 +199,9 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 		contacts = append(contacts, contact)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": contacts})
+	if contacts == nil {
+		contacts = []models.Contact{}
+	}
+	logDebug("Returning %d contacts", len(contacts))
+	c.JSON(http.StatusOK, contacts)
 }

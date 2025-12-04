@@ -17,19 +17,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [darkMode, setDarkMode] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // Initialize dark mode from user preferences or localStorage
+    // Initialize dark mode from user preferences
     useEffect(() => {
-        // Only enable dark mode if explicitly set to true
+        // Only enable dark mode if explicitly set to true in user preferences
         if (user?.preferences?.darkMode === true) {
             setDarkMode(true)
-        } else if (!user) {
-            // Fallback to localStorage only if user is not logged in
-            const savedMode = localStorage.getItem('darkMode')
-            if (savedMode === 'true') {
-                setDarkMode(true)
-            }
+        } else {
+            // Default to light mode for all other cases
+            setDarkMode(false)
         }
-        // Otherwise, default to light mode (false)
     }, [user])
 
     // Apply dark mode class to document

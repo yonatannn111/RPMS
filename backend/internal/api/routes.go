@@ -25,6 +25,25 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 		})
 	})
 
+	// DEBUG ENDPOINT - REMOVE IN PRODUCTION
+	router.GET("/debug/users", func(c *gin.Context) {
+		rows, err := db.Pool.Query(c.Request.Context(), "SELECT id, name, email, role FROM users")
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+		var users []map[string]interface{}
+		for rows.Next() {
+			var id, name, email, role string
+			rows.Scan(&id, &name, &email, &role)
+			users = append(users, map[string]interface{}{
+				"id": id, "name": name, "email": email, "role": role,
+			})
+		}
+		c.JSON(200, users)
+	})
+
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
