@@ -15,7 +15,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     )
@@ -23,15 +23,15 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center">
         <div className="text-center space-y-8">
-          <h1 className="text-4xl font-bold text-gray-900">Welcome to RPMS</h1>
-          <p className="text-xl text-gray-600">Research Paper Management System</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Welcome to RPMS</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">Research Paper Management System</p>
           <div className="space-x-4">
             <Link href="/login" className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 font-medium">
               Login
             </Link>
-            <Link href="/signup" className="bg-white text-red-600 border border-red-600 px-6 py-3 rounded-md hover:bg-red-50 font-medium">
+            <Link href="/signup" className="bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-600 dark:border-red-500 px-6 py-3 rounded-md hover:bg-red-50 dark:hover:bg-gray-700 font-medium">
               Sign Up
             </Link>
           </div>
@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {user.role === 'author' && <AuthorDashboard user={user} onLogout={logout} />}
       {user.role === 'editor' && <EditorPanel user={user} onLogout={logout} />}
       {user.role === 'coordinator' && <CoordinatorDashboard user={user} onLogout={logout} />}

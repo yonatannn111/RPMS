@@ -98,6 +98,17 @@ func RunMigrations(db *Database) error {
 		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 	);`
 
+	// Create messages table
+	createMessagesTable := `
+	CREATE TABLE IF NOT EXISTS messages (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+		receiver_id UUID REFERENCES users(id) ON DELETE CASCADE,
+		content TEXT NOT NULL,
+		is_read BOOLEAN DEFAULT FALSE,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	);`
+
 	// Create indexes
 	createIndexes := `
 	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -106,7 +117,9 @@ func RunMigrations(db *Database) error {
 	CREATE INDEX IF NOT EXISTS idx_reviews_paper_id ON reviews(paper_id);
 	CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_id ON reviews(reviewer_id);
 	CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
-	CREATE INDEX IF NOT EXISTS idx_events_coordinator_id ON events(coordinator_id);`
+	CREATE INDEX IF NOT EXISTS idx_events_coordinator_id ON events(coordinator_id);
+	CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages(sender_id, receiver_id);
+	CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);`
 
 	// Add new columns to users table if they don't exist
 	addAvatarColumn := `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255) DEFAULT '';`
@@ -131,6 +144,7 @@ func RunMigrations(db *Database) error {
 		createPapersTable,
 		createReviewsTable,
 		createEventsTable,
+		createMessagesTable,
 		createIndexes,
 		addAvatarColumn,
 		addBioColumn,

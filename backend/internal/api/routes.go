@@ -11,6 +11,7 @@ import (
 
 func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) {
 	server := NewServer(db, cfg)
+	chatHandler := NewChatHandler(db)
 	jwtManager := auth.NewJWTManager(cfg)
 
 	// CORS middleware
@@ -67,6 +68,14 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 				events.POST("", middleware.CoordinatorOrAdmin(), server.CreateEvent)
 				events.PUT("/:id", middleware.CoordinatorOrAdmin(), server.UpdateEvent)
 				events.DELETE("/:id", middleware.CoordinatorOrAdmin(), server.DeleteEvent)
+			}
+
+			// Chat routes
+			chat := protected.Group("/chat")
+			{
+				chat.POST("/send", chatHandler.SendMessage)
+				chat.GET("/messages", chatHandler.GetMessages)
+				chat.GET("/contacts", chatHandler.GetContacts)
 			}
 
 			// Admin only routes

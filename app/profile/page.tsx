@@ -51,16 +51,16 @@ export default function ProfilePage() {
 
     if (loading || !user) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
-                <div className="bg-white shadow rounded-lg overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
                     {/* Header */}
                     <div className="bg-red-600 px-6 py-4 flex justify-between items-center">
                         <div className="flex items-center space-x-4">
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                     {/* Content */}
                     <div className="p-6 space-y-6">
                         {message.text && (
-                            <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                            <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-50 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
                                 {message.text}
                             </div>
                         )}
@@ -125,38 +125,38 @@ export default function ProfilePage() {
                                 {isEditing ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
                                             <input
                                                 type="text"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
+                                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Bio</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
                                             <textarea
                                                 rows={4}
                                                 value={formData.bio}
                                                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
+                                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
                                                 placeholder="Tell us about yourself..."
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Avatar URL</label>
                                             <input
                                                 type="text"
                                                 value={formData.avatar}
                                                 onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
+                                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border"
                                                 placeholder="https://example.com/avatar.jpg"
                                             />
                                         </div>
                                         <div className="flex justify-end space-x-3 pt-4">
                                             <button
                                                 onClick={() => setIsEditing(false)}
-                                                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                                                className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                                             >
                                                 <X className="w-4 h-4 mr-2" />
                                                 Cancel
@@ -174,21 +174,21 @@ export default function ProfilePage() {
                                 ) : (
                                     <div className="space-y-4">
                                         <div>
-                                            <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
-                                            <div className="flex items-center text-gray-500 mt-1">
+                                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
+                                            <div className="flex items-center text-gray-500 dark:text-gray-400 mt-1">
                                                 <Mail className="w-4 h-4 mr-2" />
                                                 {user.email}
                                             </div>
                                         </div>
 
-                                        <div className="border-t border-gray-200 pt-4">
-                                            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">About</h3>
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">About</h3>
+                                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                                                 {user.bio || 'No bio provided yet.'}
                                             </p>
                                         </div>
 
-                                        <div className="border-t border-gray-200 pt-4 flex items-center text-sm text-gray-500">
+                                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
                                             <Calendar className="w-4 h-4 mr-2" />
                                             Joined {new Date(user.created_at).toLocaleDateString()}
                                         </div>

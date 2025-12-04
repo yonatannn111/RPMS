@@ -84,23 +84,23 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header user={user} title="Author Dashboard" onLogout={onLogout} />
 
       <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-red-600">My Papers</h2>
               <button
                 onClick={() => setShowSubmissionForm(true)}
@@ -113,7 +113,7 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
               {papers.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No papers submitted yet</p>
+                  <p className="text-gray-600 dark:text-gray-400">No papers submitted yet</p>
                   <button
                     onClick={() => setShowSubmissionForm(true)}
                     className="mt-4 text-red-600 hover:text-red-700 font-medium"
@@ -124,13 +124,13 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
               ) : (
                 <div className="space-y-4">
                   {papers.map(paper => (
-                    <div key={paper.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div key={paper.id} className="border dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-semibold">{paper.title}</h3>
-                          <p className="text-sm text-gray-600">Created: {new Date(paper.created_at).toLocaleDateString()}</p>
+                          <h3 className="font-semibold dark:text-white">{paper.title}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Created: {new Date(paper.created_at).toLocaleDateString()}</p>
                           {paper.abstract && (
-                            <p className="text-sm text-gray-700 mt-2 line-clamp-2">{paper.abstract}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-2">{paper.abstract}</p>
                           )}
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(paper.status)}`}>
@@ -145,14 +145,14 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
           </div>
 
           {showSubmissionForm && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+              <div className="p-6 border-b dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-red-600">Submit New Paper</h2>
               </div>
               <div className="p-6">
                 <form onSubmit={handleSubmitPaper} className="space-y-4">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Paper Title
                     </label>
                     <input
@@ -161,12 +161,12 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
                       value={newPaper.title}
                       onChange={(e) => setNewPaper({ ...newPaper, title: e.target.value })}
                       placeholder="Enter paper title"
-                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                       required
                     />
                   </div>
                   <div>
-                    <label htmlFor="abstract" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="abstract" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Abstract
                     </label>
                     <textarea
@@ -175,12 +175,12 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
                       onChange={(e) => setNewPaper({ ...newPaper, abstract: e.target.value })}
                       placeholder="Enter paper abstract"
                       rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                       required
                     />
                   </div>
                   <div>
-                    <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Content
                     </label>
                     <textarea
@@ -189,7 +189,7 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
                       onChange={(e) => setNewPaper({ ...newPaper, content: e.target.value })}
                       placeholder="Enter paper content"
                       rows={8}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
                   <div className="flex space-x-2">
@@ -202,7 +202,7 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
                     <button
                       type="button"
                       onClick={() => setShowSubmissionForm(false)}
-                      className="border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+                      className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       Cancel
                     </button>
@@ -214,8 +214,8 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
         </div>
 
         <div>
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="p-6 border-b dark:border-gray-700">
               <h2 className="text-xl font-semibold text-red-600">Notifications</h2>
             </div>
             <div className="p-6">
@@ -224,9 +224,9 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
               ) : (
                 <div className="space-y-3">
                   {notifications.map(notification => (
-                    <div key={notification.id} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm">{notification.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{notification.timestamp}</p>
+                    <div key={notification.id} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg">
+                      <p className="text-sm dark:text-yellow-100">{notification.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.timestamp}</p>
                     </div>
                   ))}
                 </div>

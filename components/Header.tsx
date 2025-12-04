@@ -14,15 +14,15 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
     const router = useRouter()
 
     return (
-        <header className="bg-white shadow">
+        <header className="bg-white dark:bg-gray-800 shadow">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={() => router.push('/profile')}
-                        className="flex items-center space-x-2 text-gray-700 hover:text-red-600 transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-gray-300">
+                        <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-300 dark:border-gray-600">
                             {user.avatar ? (
                                 <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
                             ) : (
@@ -33,7 +33,7 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
                     </button>
                     <button
                         onClick={onLogout}
-                        className="text-sm text-gray-500 hover:text-red-600 font-medium"
+                        className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 font-medium"
                     >
                         Sign out
                     </button>
