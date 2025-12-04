@@ -5,6 +5,7 @@ import (
 	"rpms-backend/internal/config"
 	"rpms-backend/internal/database"
 	"rpms-backend/internal/middleware"
+	"rpms-backend/internal/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +14,14 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 	server := NewServer(db, cfg)
 	chatHandler := NewChatHandler(db)
 	jwtManager := auth.NewJWTManager(cfg)
+
+	// Initialize Supabase Storage
+	supabaseStorage := storage.NewSupabaseStorage(
+		cfg.Supabase.URL,
+		cfg.Supabase.ServiceRoleKey,
+		cfg.Supabase.Bucket,
+	)
+	uploadHandler := NewUploadHandler(supabaseStorage)
 
 	// CORS middleware
 	router.Use(middleware.CORSSpecific(cfg.GetCORSOrigins()))
@@ -92,9 +101,11 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 			// Chat routes
 			chat := protected.Group("/chat")
 			{
+				chat.POST("/upload", uploadHandler.UploadFile)
 				chat.POST("/send", chatHandler.SendMessage)
 				chat.GET("/messages", chatHandler.GetMessages)
 				chat.GET("/contacts", chatHandler.GetContacts)
+				chat.GET("/unread-count", chatHandler.GetUnreadCount)
 			}
 
 			// Admin only routes

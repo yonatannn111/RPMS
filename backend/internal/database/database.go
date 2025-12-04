@@ -105,6 +105,12 @@ func RunMigrations(db *Database) error {
 		sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
 		receiver_id UUID REFERENCES users(id) ON DELETE CASCADE,
 		content TEXT NOT NULL,
+		attachment_url TEXT,
+		attachment_name TEXT,
+		attachment_type TEXT,
+		attachment_size INTEGER,
+		reply_to_message_id UUID REFERENCES messages(id) ON DELETE SET NULL,
+		is_forwarded BOOLEAN DEFAULT FALSE,
 		is_read BOOLEAN DEFAULT FALSE,
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 	);`
@@ -139,6 +145,16 @@ func RunMigrations(db *Database) error {
 		END $$;
 	`
 
+	// Add new columns to messages table for attachments and replies
+	addMessageAttachmentColumns := `
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_type TEXT;
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_message_id UUID REFERENCES messages(id) ON DELETE SET NULL;
+		ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_forwarded BOOLEAN DEFAULT FALSE;
+	`
+
 	migrations := []string{
 		createUsersTable,
 		createPapersTable,
@@ -150,6 +166,7 @@ func RunMigrations(db *Database) error {
 		addBioColumn,
 		addPreferencesColumn,
 		alterEventsDateColumn,
+		addMessageAttachmentColumns,
 	}
 
 	for _, migration := range migrations {

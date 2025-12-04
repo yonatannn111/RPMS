@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { User, Contact, Message, getContacts, getMessages, sendMessage } from '@/lib/api'
-import { Send, Search, MessageSquare } from 'lucide-react'
+import { User, Contact, Message, getContacts, getMessages, sendMessage, uploadChatFile } from '@/lib/api'
+import { Send, Search, MessageSquare, Paperclip, X, Reply, Forward } from 'lucide-react'
+import MessageAttachment from './MessageAttachment'
+import ReplyPreview from './ReplyPreview'
+import ForwardModal from './ForwardModal'
 
 interface ChatInterfaceProps {
     currentUser: User
@@ -17,6 +20,19 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     const [sending, setSending] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [searchTerm, setSearchTerm] = useState('')
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Attachment state
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [uploading, setUploading] = useState(false)
+    const [uploadedFileData, setUploadedFileData] = useState<{ url: string, name: string, type: string, size: number } | null>(null)
+
+    // Reply state
+    const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+
+    // Forward state
+    const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null)
+    const [isForwardModalOpen, setIsForwardModalOpen] = useState(false)
 
     // Fetch contacts on mount
     useEffect(() => {
@@ -81,20 +97,69 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         }
     }
 
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB')
+            return
+        }
+
+        setSelectedFile(file)
+        setUploading(true)
+
+        try {
+            const result = await uploadChatFile(file)
+            if (result.success && result.data) {
+                setUploadedFileData(result.data)
+            } else {
+                alert(result.error || 'Failed to upload file')
+                setSelectedFile(null)
+            }
+        } catch (error) {
+            console.error('Upload error:', error)
+            alert('Failed to upload file')
+            setSelectedFile(null)
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null)
+        setUploadedFileData(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
+    }
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!selectedContact || !newMessage.trim()) return
+        if (!selectedContact) return
+        if (!newMessage.trim() && !uploadedFileData) return
 
         setSending(true)
         try {
-            const result = await sendMessage(selectedContact.id, newMessage)
+            const result = await sendMessage(
+                selectedContact.id,
+                newMessage || '',
+                uploadedFileData?.url,
+                uploadedFileData?.name,
+                uploadedFileData?.type,
+                uploadedFileData?.size,
+                replyingTo?.id
+            )
             if (result.success && result.data) {
                 setMessages([...messages, result.data])
                 setNewMessage('')
+                handleRemoveFile()
+                setReplyingTo(null)
                 // Update last message in contact list immediately
                 setContacts(contacts.map(c =>
                     c.id === selectedContact.id
-                        ? { ...c, last_message: { content: result.data!.content, created_at: result.data!.created_at } }
+                        ? { ...c, last_message: { content: result.data!.content || '[Attachment]', created_at: result.data!.created_at } }
                         : c
                 ))
             }
@@ -102,6 +167,42 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             console.error('Failed to send message:', error)
         } finally {
             setSending(false)
+        }
+    }
+
+    const handleForwardMessage = async (contactIds: string[]) => {
+        if (!forwardingMessage || contactIds.length === 0) return
+
+        try {
+            // Send to all selected contacts
+            const promises = contactIds.map(contactId =>
+                sendMessage(
+                    contactId,
+                    forwardingMessage.content,
+                    forwardingMessage.attachment_url,
+                    forwardingMessage.attachment_name,
+                    forwardingMessage.attachment_type,
+                    forwardingMessage.attachment_size,
+                    undefined, // No reply_to_message_id for forwarded messages
+                    true // isForwarded
+                )
+            )
+
+            await Promise.all(promises)
+
+            // If forwarding to current chat, update messages list
+            if (selectedContact && contactIds.includes(selectedContact.id)) {
+                // Refresh messages to show the forwarded one
+                fetchMessages(selectedContact.id)
+            }
+
+            alert(`Message forwarded to ${contactIds.length} contact${contactIds.length > 1 ? 's' : ''} successfully`)
+        } catch (error) {
+            console.error('Failed to forward message:', error)
+            alert('Failed to forward message')
+        } finally {
+            setForwardingMessage(null)
+            setIsForwardModalOpen(false)
         }
     }
 
@@ -124,6 +225,13 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-[calc(100vh-120px)] flex border dark:border-gray-700">
+            <ForwardModal
+                isOpen={isForwardModalOpen}
+                onClose={() => setIsForwardModalOpen(false)}
+                contacts={contacts}
+                onForward={handleForwardMessage}
+                messageContent={forwardingMessage?.content || (forwardingMessage?.attachment_url ? '[Attachment]' : '')}
+            />
             {/* Sidebar - Contact List */}
             <div className="w-1/3 border-r dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900/50">
                 <div className="p-4 border-b dark:border-gray-700">
@@ -174,7 +282,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                 </div>
                                 {contact.last_message && (
                                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 truncate pl-13">
-                                        {contact.last_message.content}
+                                        {contact.last_message.content || (contact.last_message.attachment_url ? '[Attachment]' : '')}
                                     </p>
                                 )}
                             </div>
@@ -225,22 +333,77 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                                     </span>
                                                 </div>
                                             )}
-                                            <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                <div
-                                                    className={`max-w-[70%] rounded-lg p-3 ${isMe
-                                                        ? 'bg-red-600 text-white rounded-br-none'
-                                                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border dark:border-gray-600 rounded-bl-none'
-                                                        }`}
-                                                >
-                                                    <p className="text-sm">{msg.content}</p>
-                                                    <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-red-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                                                        {formatTime(msg.created_at)}
-                                                        {isMe && (
-                                                            <span className="ml-1">
-                                                                {msg.is_read ? '✓✓' : '✓'}
-                                                            </span>
+                                            <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+                                                <div className="flex items-start space-x-2">
+                                                    {!isMe && (
+                                                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => setReplyingTo(msg)}
+                                                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                                                title="Reply"
+                                                            >
+                                                                <Reply className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setForwardingMessage(msg)
+                                                                    setIsForwardModalOpen(true)
+                                                                }}
+                                                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                                                title="Forward"
+                                                            >
+                                                                <Forward className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    <div
+                                                        className={`max-w-[70%] rounded-lg p-3 ${isMe
+                                                            ? 'bg-red-600 text-white rounded-br-none'
+                                                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border dark:border-gray-600 rounded-bl-none'
+                                                            }`}
+                                                    >
+                                                        {msg.is_forwarded && (
+                                                            <p className="text-xs italic opacity-75 mb-1">Forwarded</p>
                                                         )}
-                                                    </p>
+                                                        {msg.content && <p className="text-sm">{msg.content}</p>}
+                                                        {msg.attachment_url && (
+                                                            <MessageAttachment
+                                                                url={msg.attachment_url}
+                                                                name={msg.attachment_name || 'file'}
+                                                                type={msg.attachment_type || 'application/octet-stream'}
+                                                                size={msg.attachment_size}
+                                                            />
+                                                        )}
+                                                        <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-red-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                            {formatTime(msg.created_at)}
+                                                            {isMe && (
+                                                                <span className="ml-1">
+                                                                    {msg.is_read ? '✓✓' : '✓'}
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    {isMe && (
+                                                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => setReplyingTo(msg)}
+                                                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                                                title="Reply"
+                                                            >
+                                                                <Reply className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setForwardingMessage(msg)
+                                                                    setIsForwardModalOpen(true)
+                                                                }}
+                                                                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                                                title="Forward"
+                                                            >
+                                                                <Forward className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -251,23 +414,77 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-                            <form onSubmit={handleSendMessage} className="flex space-x-2">
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Type a message..."
-                                    className="flex-1 p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-500"
+                        <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+                            {/* Reply Preview */}
+                            {replyingTo && (
+                                <ReplyPreview
+                                    content={replyingTo.content || '[Attachment]'}
+                                    senderName={replyingTo.sender_id === currentUser.id ? 'You' : selectedContact.name}
+                                    onClose={() => setReplyingTo(null)}
                                 />
-                                <button
-                                    type="submit"
-                                    disabled={!newMessage.trim() || sending}
-                                    className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Send className="h-5 w-5" />
-                                </button>
-                            </form>
+                            )}
+
+                            {/* File Preview */}
+                            {selectedFile && uploadedFileData && (
+                                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <Paperclip className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">{selectedFile.name}</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            ({(selectedFile.size / 1024).toFixed(1)} KB)
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleRemoveFile}
+                                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                                    >
+                                        <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="p-4">
+                                <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                                    {/* Hidden file input */}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        onChange={handleFileSelect}
+                                        accept="image/*,.pdf,.doc,.docx,.txt"
+                                        className="hidden"
+                                    />
+
+                                    {/* Attachment button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading || sending}
+                                        className="p-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors disabled:opacity-50"
+                                        title="Attach file"
+                                    >
+                                        <Paperclip className="h-5 w-5" />
+                                    </button>
+
+                                    {/* Message input */}
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        placeholder={uploading ? "Uploading..." : "Type a message..."}
+                                        disabled={uploading || sending}
+                                        className="flex-1 p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                                    />
+
+                                    {/* Send button */}
+                                    <button
+                                        type="submit"
+                                        disabled={(!newMessage.trim() && !uploadedFileData) || sending || uploading}
+                                        className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Send className="h-5 w-5" />
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </>
                 ) : (

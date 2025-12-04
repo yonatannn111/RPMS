@@ -1,14 +1,13 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"rpms-backend/internal/database"
 	"rpms-backend/internal/models"
-
-	"fmt"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,8 +33,14 @@ func NewChatHandler(db *database.Database) *ChatHandler {
 // SendMessage handles sending a new message
 func (h *ChatHandler) SendMessage(c *gin.Context) {
 	var req struct {
-		ReceiverID string `json:"receiver_id" binding:"required"`
-		Content    string `json:"content" binding:"required"`
+		ReceiverID       string  `json:"receiver_id" binding:"required"`
+		Content          string  `json:"content"`
+		AttachmentURL    *string `json:"attachment_url"`
+		AttachmentName   *string `json:"attachment_name"`
+		AttachmentType   *string `json:"attachment_type"`
+		AttachmentSize   *int    `json:"attachment_size"`
+		ReplyToMessageID *string `json:"reply_to_message_id"`
+		IsForwarded      *bool   `json:"is_forwarded"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -43,16 +48,30 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
-	senderID := c.GetString("userID")
+	senderID := c.GetString("user_id")
 
-	// TODO: Verify if sender is allowed to chat with receiver based on roles
-	// For now, we'll assume the frontend filters contacts correctly,
-	// but in a production app we should enforce this on backend too.
+	// Validate that either content or attachment is provided
+	if req.Content == "" && req.AttachmentURL == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Message must have content or attachment"})
+		return
+	}
+
+	// Set default for is_forwarded
+	isForwarded := false
+	if req.IsForwarded != nil {
+		isForwarded = *req.IsForwarded
+	}
 
 	query := `
-		INSERT INTO messages (sender_id, receiver_id, content, created_at)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, sender_id, receiver_id, content, is_read, created_at
+		INSERT INTO messages (
+			sender_id, receiver_id, content, 
+			attachment_url, attachment_name, attachment_type, attachment_size,
+			reply_to_message_id, is_forwarded, created_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, sender_id, receiver_id, content, 
+			attachment_url, attachment_name, attachment_type, attachment_size,
+			reply_to_message_id, is_forwarded, is_read, created_at
 	`
 
 	var msg models.Message
@@ -62,8 +81,18 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		senderID,
 		req.ReceiverID,
 		req.Content,
+		req.AttachmentURL,
+		req.AttachmentName,
+		req.AttachmentType,
+		req.AttachmentSize,
+		req.ReplyToMessageID,
+		isForwarded,
 		time.Now(),
-	).Scan(&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.IsRead, &msg.CreatedAt)
+	).Scan(
+		&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content,
+		&msg.AttachmentURL, &msg.AttachmentName, &msg.AttachmentType, &msg.AttachmentSize,
+		&msg.ReplyToMessageID, &msg.IsForwarded, &msg.IsRead, &msg.CreatedAt,
+	)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send message"})
@@ -81,7 +110,7 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("userID")
+	userID := c.GetString("user_id")
 
 	// Mark messages as read
 	updateQuery := `
@@ -93,7 +122,9 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 
 	// Fetch messages
 	query := `
-		SELECT id, sender_id, receiver_id, content, is_read, created_at
+		SELECT id, sender_id, receiver_id, content, 
+			attachment_url, attachment_name, attachment_type, attachment_size,
+			reply_to_message_id, is_forwarded, is_read, created_at
 		FROM messages
 		WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
 		ORDER BY created_at ASC
@@ -109,7 +140,11 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 	var messages []models.Message
 	for rows.Next() {
 		var msg models.Message
-		if err := rows.Scan(&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.IsRead, &msg.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content,
+			&msg.AttachmentURL, &msg.AttachmentName, &msg.AttachmentType, &msg.AttachmentSize,
+			&msg.ReplyToMessageID, &msg.IsForwarded, &msg.IsRead, &msg.CreatedAt,
+		); err != nil {
 			continue
 		}
 		messages = append(messages, msg)
@@ -123,8 +158,8 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 
 // GetContacts retrieves list of users the current user can chat with
 func (h *ChatHandler) GetContacts(c *gin.Context) {
-	userID := c.GetString("userID")
-	userRole := c.GetString("userRole")
+	userID := c.GetString("user_id")
+	userRole := c.GetString("role")
 
 	logDebug("GetContacts called. UserID: %s, Role: %s", userID, userRole)
 
@@ -159,6 +194,9 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 		ORDER BY name ASC
 	`
 
+	logDebug("Executing query: %s", query)
+	logDebug("With userID parameter: %s", userID)
+
 	rows, err := h.db.Query(c.Request.Context(), query, userID)
 	if err != nil {
 		logDebug("Query failed: %v", err)
@@ -168,12 +206,15 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 	defer rows.Close()
 
 	var contacts []models.Contact
+	rowCount := 0
 	for rows.Next() {
+		rowCount++
 		var contact models.Contact
 		if err := rows.Scan(&contact.ID, &contact.Name, &contact.Email, &contact.Role, &contact.Avatar); err != nil {
-			logDebug("Scan failed: %v", err)
+			logDebug("Scan failed for row %d: %v", rowCount, err)
 			continue
 		}
+		logDebug("Found contact: %s (%s)", contact.Name, contact.Role)
 
 		// Get unread count for this contact
 		var unreadCount int
@@ -204,4 +245,23 @@ func (h *ChatHandler) GetContacts(c *gin.Context) {
 	}
 	logDebug("Returning %d contacts", len(contacts))
 	c.JSON(http.StatusOK, contacts)
+}
+
+// GetUnreadCount retrieves total unread message count for current user
+func (h *ChatHandler) GetUnreadCount(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var count int
+	err := h.db.QueryRow(
+		c.Request.Context(),
+		"SELECT COUNT(*) FROM messages WHERE receiver_id = $1 AND is_read = FALSE",
+		userID,
+	).Scan(&count)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch unread count"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"count": count})
 }
