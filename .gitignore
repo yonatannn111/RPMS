@@ -25,3 +25,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.next/server/app-paths-manifest.json
+.next/app-build-manifest.json
