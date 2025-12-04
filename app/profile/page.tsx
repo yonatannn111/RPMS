@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { updateProfile } from '@/lib/api'
 import { User as UserIcon, Mail, Calendar, Shield, Edit2, Save, X, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 
 export default function ProfilePage() {
     const { user, loading, refreshUser } = useAuth()
@@ -106,7 +107,13 @@ export default function ProfilePage() {
                             <div className="flex-shrink-0 flex flex-col items-center space-y-4">
                                 <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
                                     {user.avatar ? (
-                                        <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                                        <Image
+                                            src={user.avatar}
+                                            alt={user.name}
+                                            width={128}
+                                            height={128}
+                                            className="h-full w-full object-cover"
+                                        />
                                     ) : (
                                         <UserIcon className="h-16 w-16 text-gray-400" />
                                     )}

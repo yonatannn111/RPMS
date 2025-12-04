@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Calendar } from 'lucide-react'
 import { User, Event, getEvents, createEvent, updateEvent, deleteEvent } from '@/lib/api'
 import Header from './Header'
@@ -17,11 +17,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
   const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '', location: '' })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchEvents()
-  }, [])
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const result = await getEvents()
       if (result.success && result.data) {
@@ -36,7 +32,11 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
     } finally {
       setLoading(false)
     }
-  }
+  }, [user.id])
+
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()

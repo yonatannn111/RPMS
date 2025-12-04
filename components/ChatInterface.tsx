@@ -6,6 +6,7 @@ import { Send, Search, MessageSquare, Paperclip, X, Reply, Forward } from 'lucid
 import MessageAttachment from './MessageAttachment'
 import ReplyPreview from './ReplyPreview'
 import ForwardModal from './ForwardModal'
+import Image from 'next/image'
 
 interface ChatInterfaceProps {
     currentUser: User
@@ -262,9 +263,15 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center space-x-3">
-                                        <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold">
+                                        <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold overflow-hidden">
                                             {contact.avatar ? (
-                                                <img src={contact.avatar} alt={contact.name} className="h-full w-full rounded-full object-cover" />
+                                                <Image
+                                                    src={contact.avatar}
+                                                    alt={contact.name}
+                                                    width={40}
+                                                    height={40}
+                                                    className="h-full w-full rounded-full object-cover"
+                                                />
                                             ) : (
                                                 contact.name.charAt(0).toUpperCase()
                                             )}
@@ -298,9 +305,15 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                         {/* Chat Header */}
                         <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
                             <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold">
+                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold overflow-hidden">
                                     {selectedContact.avatar ? (
-                                        <img src={selectedContact.avatar} alt={selectedContact.name} className="h-full w-full rounded-full object-cover" />
+                                        <Image
+                                            src={selectedContact.avatar}
+                                            alt={selectedContact.name}
+                                            width={40}
+                                            height={40}
+                                            className="h-full w-full rounded-full object-cover"
+                                        />
                                     ) : (
                                         selectedContact.name.charAt(0).toUpperCase()
                                     )}

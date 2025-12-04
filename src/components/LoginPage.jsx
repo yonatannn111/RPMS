@@ -31,7 +31,7 @@ function LoginPage({ onLogin }) {
           </div>
           <h1 className="text-2xl font-bold text-red-600">RPMS Login</h1>
           <p className="text-gray-600">Research and Publication Management System</p>
-          <p className="text-sm text-gray-600">Saint Mary's University</p>
+          <p className="text-sm text-gray-600">Saint Mary&apos;s University</p>
         </div>
         
         <div className="p-6">

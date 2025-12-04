@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Contact } from '@/lib/api'
 import { X, Search, Send } from 'lucide-react'
+import Image from 'next/image'
 
 interface ForwardModalProps {
     isOpen: boolean
@@ -50,7 +51,7 @@ export default function ForwardModal({ isOpen, onClose, contacts, onForward, mes
 
                 <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700">
                     <p className="text-sm text-gray-600 dark:text-gray-400 italic truncate">
-                        "{messageContent}"
+                        &quot;{messageContent}&quot;
                     </p>
                 </div>
 
@@ -84,9 +85,15 @@ export default function ForwardModal({ isOpen, onClose, contacts, onForward, mes
                                         }`}>
                                         {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold mr-3">
+                                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-semibold mr-3 overflow-hidden">
                                         {contact.avatar ? (
-                                            <img src={contact.avatar} alt={contact.name} className="h-full w-full rounded-full object-cover" />
+                                            <Image
+                                                src={contact.avatar}
+                                                alt={contact.name}
+                                                width={40}
+                                                height={40}
+                                                className="h-full w-full rounded-full object-cover"
+                                            />
                                         ) : (
                                             contact.name.charAt(0).toUpperCase()
                                         )}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, getUnreadCount } from '@/lib/api'
 import { User as UserIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface HeaderProps {
     user: User
@@ -58,7 +59,13 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
                     >
                         <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-300 dark:border-gray-600">
                             {user.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                                <Image
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    width={32}
+                                    height={32}
+                                    className="h-full w-full object-cover"
+                                />
                             ) : (
                                 <UserIcon className="h-5 w-5 text-gray-500" />
                             )}

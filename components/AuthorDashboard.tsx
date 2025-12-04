@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BookOpen } from 'lucide-react'
 import { User, Paper, createPaper, getPapers } from '@/lib/api'
 import Header from './Header'
@@ -17,11 +17,7 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
   const [newPaper, setNewPaper] = useState({ title: '', abstract: '', content: '' })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchPapers()
-  }, [])
-
-  const fetchPapers = async () => {
+  const fetchPapers = useCallback(async () => {
     try {
       const result = await getPapers()
       if (result.success && result.data) {
@@ -36,7 +32,11 @@ export default function AuthorDashboard({ user, onLogout }: AuthorDashboardProps
     } finally {
       setLoading(false)
     }
-  }
+  }, [user.id])
+
+  useEffect(() => {
+    fetchPapers()
+  }, [fetchPapers])
 
   const handleSubmitPaper = async (e: React.FormEvent) => {
     e.preventDefault()

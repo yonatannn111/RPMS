@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Download, FileText, Image as ImageIcon, FileIcon } from 'lucide-react'
 
 interface MessageAttachmentProps {
@@ -24,9 +25,11 @@ export default function MessageAttachment({ url, name, type, size }: MessageAtta
         return (
             <div className="mt-2 max-w-sm">
                 <a href={url} target="_blank" rel="noopener noreferrer">
-                    <img
+                    <Image
                         src={url}
                         alt={name}
+                        width={400}
+                        height={256}
                         className="rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                     />
                 </a>
