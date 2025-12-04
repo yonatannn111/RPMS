@@ -52,6 +52,30 @@ export interface Event {
     coordinator_email?: string
 }
 
+export interface Message {
+    id: string
+    sender_id: string
+    receiver_id: string
+    content: string
+    is_read: boolean
+    created_at: string
+    sender_name?: string
+    receiver_name?: string
+}
+
+export interface Contact {
+    id: string
+    name: string
+    email: string
+    role: string
+    avatar: string
+    unread_count: number
+    last_message?: {
+        content: string
+        created_at: string
+    }
+}
+
 // Helper to get auth header
 const getAuthHeader = () => {
     const token = localStorage.getItem('authToken')
@@ -216,5 +240,21 @@ export async function updateEvent(id: string, updates: Partial<Event>) {
 export async function deleteEvent(id: string) {
     return request(`/events/${id}`, {
         method: 'DELETE',
+    })
+}
+
+// Chat
+export async function getContacts() {
+    return request<Contact[]>('/chat/contacts')
+}
+
+export async function getMessages(contactId: string) {
+    return request<Message[]>(`/chat/messages?contact_id=${contactId}`)
+}
+
+export async function sendMessage(receiverId: string, content: string) {
+    return request<Message>('/chat/send', {
+        method: 'POST',
+        body: JSON.stringify({ receiver_id: receiverId, content }),
     })
 }

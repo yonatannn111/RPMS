@@ -2,5 +2,7 @@
   "/page": "app/page.js",
   "/login/page": "app/login/page.js",
   "/settings/page": "app/settings/page.js",
-  "/profile/page": "app/profile/page.js"
+  "/chat/page": "app/chat/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/signup/page": "app/signup/page.js"
 }
