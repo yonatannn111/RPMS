@@ -25,6 +25,7 @@ type SupabaseConfig struct {
 	URL            string
 	AnonKey        string
 	ServiceRoleKey string
+	Bucket         string
 }
 
 type JWTConfig struct {
@@ -40,12 +41,13 @@ func New() *Config {
 			User:     getEnv("DB_USER", "postgres"),
 			Password: getEnv("DB_PASSWORD", ""),
 			DBName:   getEnv("DB_NAME", "rpms_db"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			SSLMode:  getEnv("DB_SSLMODE", "require"),
 		},
 		Supabase: SupabaseConfig{
 			URL:            getEnv("SUPABASE_URL", ""),
 			AnonKey:        getEnv("SUPABASE_ANON_KEY", ""),
 			ServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
+			Bucket:         getEnv("SUPABASE_BUCKET", "chat-attachments"),
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", "your-secret-key"),

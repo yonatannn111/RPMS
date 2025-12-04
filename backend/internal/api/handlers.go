@@ -27,6 +27,7 @@ func NewServer(db *database.Database, cfg *config.Config) *Server {
 }
 
 // Auth Handlers
+// Auth Handlers
 func (s *Server) Register(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,17 +48,20 @@ func (s *Server) Register(c *gin.Context) {
 		PasswordHash: hashedPassword,
 		Name:         req.Name,
 		Role:         req.Role,
+		Avatar:       "",                       // Default
+		Bio:          "",                       // Default
+		Preferences:  map[string]interface{}{}, // Default
 	}
 
 	ctx := c.Request.Context()
 	query := `
-		INSERT INTO users (email, password_hash, name, role)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, email, name, role, created_at, updated_at
+		INSERT INTO users (email, password_hash, name, role, avatar, bio, preferences)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, email, name, role, avatar, bio, preferences, created_at, updated_at
 	`
 
-	err = s.db.Pool.QueryRow(ctx, query, user.Email, user.PasswordHash, user.Name, user.Role).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Role, &user.CreatedAt, &user.UpdatedAt,
+	err = s.db.Pool.QueryRow(ctx, query, user.Email, user.PasswordHash, user.Name, user.Role, user.Avatar, user.Bio, user.Preferences).Scan(
+		&user.ID, &user.Email, &user.Name, &user.Role, &user.Avatar, &user.Bio, &user.Preferences, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -91,13 +95,13 @@ func (s *Server) Login(c *gin.Context) {
 	var user models.User
 
 	query := `
-		SELECT id, email, password_hash, name, role, created_at, updated_at
+		SELECT id, email, password_hash, name, role, avatar, bio, preferences, created_at, updated_at
 		FROM users
-		WHERE email = $1 AND role = $2
+		WHERE email = $1
 	`
 
-	err := s.db.Pool.QueryRow(ctx, query, req.Email, req.Role).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role, &user.CreatedAt, &user.UpdatedAt,
+	err := s.db.Pool.QueryRow(ctx, query, req.Email).Scan(
+		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role, &user.Avatar, &user.Bio, &user.Preferences, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -133,13 +137,13 @@ func (s *Server) GetProfile(c *gin.Context) {
 	var user models.User
 
 	query := `
-		SELECT id, email, name, role, created_at, updated_at
+		SELECT id, email, name, role, avatar, bio, preferences, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
 
 	err := s.db.Pool.QueryRow(ctx, query, userID).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Role, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.Name, &user.Role, &user.Avatar, &user.Bio, &user.Preferences, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -148,6 +152,106 @@ func (s *Server) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (s *Server) UpdateProfile(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	id, err := uuid.Parse(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req models.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	query := `
+		UPDATE users
+		SET name = $1, avatar = $2, bio = $3, preferences = $4, updated_at = NOW()
+		WHERE id = $5
+		RETURNING id, email, name, role, avatar, bio, preferences, created_at, updated_at
+	`
+
+	var user models.User
+	err = s.db.Pool.QueryRow(ctx, query, req.Name, req.Avatar, req.Bio, req.Preferences, id).Scan(
+		&user.ID, &user.Email, &user.Name, &user.Role, &user.Avatar, &user.Bio, &user.Preferences, &user.CreatedAt, &user.UpdatedAt,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func (s *Server) ChangePassword(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	id, err := uuid.Parse(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Get current password hash
+	var currentHash string
+	err = s.db.Pool.QueryRow(ctx, "SELECT password_hash FROM users WHERE id = $1", id).Scan(&currentHash)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Verify old password
+	if !auth.CheckPassword(req.OldPassword, currentHash) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid old password"})
+		return
+	}
+
+	// Hash new password
+	newHash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash new password"})
+		return
+	}
+
+	// Update password
+	_, err = s.db.Pool.Exec(ctx, "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", newHash, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}
+
+func (s *Server) DeleteAccount(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	id, err := uuid.Parse(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	_, err = s.db.Pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Account deleted successfully"})
 }
 
 // Paper Handlers

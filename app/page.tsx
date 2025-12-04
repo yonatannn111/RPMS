@@ -1,60 +1,51 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import LoginPage from '@/components/LoginPage'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import Link from 'next/link'
 import AuthorDashboard from '@/components/AuthorDashboard'
 import EditorPanel from '@/components/EditorPanel'
-import AdminPanel from '@/components/AdminPanel'
 import CoordinatorDashboard from '@/components/CoordinatorDashboard'
-
-// Mock users - will be replaced with Supabase auth
-const mockUsers = {
-  'author@smu.edu': { role: 'author', name: 'Dr. John Smith', id: 'auth1' },
-  'editor@smu.edu': { role: 'editor', name: 'Dr. Sarah Johnson', id: 'edit1' },
-  'admin@smu.edu': { role: 'admin', name: 'Admin User', id: 'admin1' },
-  'coordinator@smu.edu': { role: 'coordinator', name: 'Event Coordinator', id: 'coord1' }
-}
+import AdminPanel from '@/components/AdminPanel'
 
 export default function Home() {
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const { user, loading, logout } = useAuth()
+  const router = useRouter()
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser')
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser))
-    }
-  }, [])
-
-  const handleLogin = (email: string, password: string, selectedRole: string) => {
-    const user = mockUsers[email as keyof typeof mockUsers]
-    if (user && user.role === selectedRole && password === 'password123') {
-      setCurrentUser(user)
-      localStorage.setItem('currentUser', JSON.stringify(user))
-      return { success: true }
-    } else {
-      return { success: false, error: 'Invalid credentials or role mismatch' }
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    )
   }
 
-  const handleLogout = () => {
-    setCurrentUser(null)
-    localStorage.removeItem('currentUser')
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center">
+        <div className="text-center space-y-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Welcome to RPMS</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">Research Paper Management System</p>
+          <div className="space-x-4">
+            <Link href="/login" className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 font-medium">
+              Login
+            </Link>
+            <Link href="/signup" className="bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-600 dark:border-red-500 px-6 py-3 rounded-md hover:bg-red-50 dark:hover:bg-gray-700 font-medium">
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} />
-  }
-
-  switch (currentUser.role) {
-    case 'author':
-      return <AuthorDashboard user={currentUser} onLogout={handleLogout} />
-    case 'editor':
-      return <EditorPanel user={currentUser} onLogout={handleLogout} />
-    case 'admin':
-      return <AdminPanel user={currentUser} onLogout={handleLogout} />
-    case 'coordinator':
-      return <CoordinatorDashboard user={currentUser} onLogout={handleLogout} />
-    default:
-      return <div>Invalid role</div>
-  }
+  return (
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {user.role === 'author' && <AuthorDashboard user={user} onLogout={logout} />}
+      {user.role === 'editor' && <EditorPanel user={user} onLogout={logout} />}
+      {user.role === 'coordinator' && <CoordinatorDashboard user={user} onLogout={logout} />}
+      {user.role === 'admin' && <AdminPanel user={user} onLogout={logout} />}
+    </main>
+  )
 }

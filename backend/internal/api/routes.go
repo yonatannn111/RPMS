@@ -5,13 +5,23 @@ import (
 	"rpms-backend/internal/config"
 	"rpms-backend/internal/database"
 	"rpms-backend/internal/middleware"
+	"rpms-backend/internal/storage"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) {
 	server := NewServer(db, cfg)
+	chatHandler := NewChatHandler(db)
 	jwtManager := auth.NewJWTManager(cfg)
+
+	// Initialize Supabase Storage
+	supabaseStorage := storage.NewSupabaseStorage(
+		cfg.Supabase.URL,
+		cfg.Supabase.ServiceRoleKey,
+		cfg.Supabase.Bucket,
+	)
+	uploadHandler := NewUploadHandler(supabaseStorage)
 
 	// CORS middleware
 	router.Use(middleware.CORSSpecific(cfg.GetCORSOrigins()))
@@ -22,6 +32,25 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 			"status":  "ok",
 			"service": "rpms-backend",
 		})
+	})
+
+	// DEBUG ENDPOINT - REMOVE IN PRODUCTION
+	router.GET("/debug/users", func(c *gin.Context) {
+		rows, err := db.Pool.Query(c.Request.Context(), "SELECT id, name, email, role FROM users")
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+		var users []map[string]interface{}
+		for rows.Next() {
+			var id, name, email, role string
+			rows.Scan(&id, &name, &email, &role)
+			users = append(users, map[string]interface{}{
+				"id": id, "name": name, "email": email, "role": role,
+			})
+		}
+		c.JSON(200, users)
 	})
 
 	// API v1 routes
@@ -40,6 +69,9 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 		{
 			// User routes
 			protected.GET("/profile", server.GetProfile)
+			protected.PUT("/profile", server.UpdateProfile)
+			protected.PUT("/auth/password", server.ChangePassword)
+			protected.DELETE("/auth/account", server.DeleteAccount)
 
 			// Paper routes
 			papers := protected.Group("/papers")
@@ -64,6 +96,16 @@ func SetupRoutes(router *gin.Engine, db *database.Database, cfg *config.Config) 
 				events.POST("", middleware.CoordinatorOrAdmin(), server.CreateEvent)
 				events.PUT("/:id", middleware.CoordinatorOrAdmin(), server.UpdateEvent)
 				events.DELETE("/:id", middleware.CoordinatorOrAdmin(), server.DeleteEvent)
+			}
+
+			// Chat routes
+			chat := protected.Group("/chat")
+			{
+				chat.POST("/upload", uploadHandler.UploadFile)
+				chat.POST("/send", chatHandler.SendMessage)
+				chat.GET("/messages", chatHandler.GetMessages)
+				chat.GET("/contacts", chatHandler.GetContacts)
+				chat.GET("/unread-count", chatHandler.GetUnreadCount)
 			}
 
 			// Admin only routes

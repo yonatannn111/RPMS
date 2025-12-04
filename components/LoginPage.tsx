@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { BookOpen } from 'lucide-react'
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string, selectedRole: string) => { success: boolean; error?: string }
+  onLogin: (email: string, password: string, selectedRole: string) => Promise<{ success: boolean; error?: string }>
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
@@ -12,19 +12,28 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     if (!email || !password || !selectedRole) {
       setError('Please fill in all fields')
+      setLoading(false)
       return
     }
 
-    const result = onLogin(email, password, selectedRole)
-    if (!result.success) {
-      setError(result.error || 'Login failed')
+    try {
+      const result = await onLogin(email, password, selectedRole)
+      if (!result.success) {
+        setError(result.error || 'Login failed')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -39,7 +48,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <p className="text-gray-600">Research and Publication Management System</p>
           <p className="text-sm text-gray-600">Saint Mary's University</p>
         </div>
-        
+
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -59,7 +68,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 <option value="coordinator">Event Coordinator</option>
               </select>
             </div>
-            
+
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
@@ -73,7 +82,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
             </div>
-            
+
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
