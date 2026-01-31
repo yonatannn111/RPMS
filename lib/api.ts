@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
 
 export interface User {
     id: string
@@ -215,7 +215,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 // Auth
-export async function signUp(data: { email: string; password: string; name: string; role: string }) {
+export async function signUp(data: Record<string, any>) {
     const result = await request<{ user: User; token: string }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -227,6 +227,20 @@ export async function signUp(data: { email: string; password: string; name: stri
     }
 
     return { success: false, error: result.error }
+}
+
+export async function verifyEmail(email: string, code: string) {
+    return request<{ user: User }>('/auth/verify', {
+        method: 'POST',
+        body: JSON.stringify({ email, code }),
+    })
+}
+
+export async function resendVerificationCode(email: string) {
+    return request('/auth/resend-code', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    })
 }
 
 export async function signIn(email: string, password: string) {

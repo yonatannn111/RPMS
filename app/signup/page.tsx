@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signUp } from '@/lib/api'
+import { signUp, verifyEmail, resendVerificationCode } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 
 export default function SignupPage() {
@@ -42,18 +42,12 @@ export default function SignupPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            })
+            const result = await signUp(formData)
 
-            const data = await response.json()
-
-            if (response.ok) {
+            if (result.success) {
                 setStep(2) // Move to verification step
             } else {
-                setError(data.error || 'Failed to sign up')
+                setError(result.error || 'Failed to sign up')
             }
         } catch (err) {
             setError('An unexpected error occurred')
@@ -68,17 +62,11 @@ export default function SignupPage() {
         setLoading(true)
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email, code: verificationCode }),
-            })
+            const result = await verifyEmail(formData.email, verificationCode)
 
-            const result = await response.json()
-
-            if (response.ok && result.user) {
-                login(result.user)
-                router.push('/dashboard') // Or wherever you want to redirect
+            if (result.success && result.data?.user) {
+                login(result.data.user)
+                router.push('/dashboard')
             } else {
                 setError(result.error || 'Verification failed')
             }
@@ -95,15 +83,9 @@ export default function SignupPage() {
         setResendLoading(true)
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/resend-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email }),
-            })
+            const result = await resendVerificationCode(formData.email)
 
-            const result = await response.json()
-
-            if (response.ok) {
+            if (result.success) {
                 setResendSuccess('Verification code resent successfully!')
                 // Clear success message after 5 seconds
                 setTimeout(() => setResendSuccess(''), 5000)
