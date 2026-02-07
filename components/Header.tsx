@@ -81,10 +81,8 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
                 ))
                 // Also update unread count locally
                 setUnreadCount(prev => Math.max(0, prev - 1))
-                // fetchNotifications() // Skip immediate fetch to avoid race condition with local state
             } else {
                 console.error('[Header] Failed to mark as read:', result.error)
-                alert('Failed to mark notification as read: ' + result.error)
             }
         }
 
@@ -92,13 +90,20 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
         if (notification.paper_id) {
             setShowNotifications(false)
 
-            // If we are already on the dashboard page, manually set the hash to trigger scrolling
-            if (window.location.pathname === '/dashboard') {
-                window.location.hash = '' // Clear first to ensure change is detected
-                window.location.hash = `paper-${notification.paper_id}`
+            const targetPath = '/dashboard'
+            const currentPath = window.location.pathname
+            const targetHash = `#paper-${notification.paper_id}`
+
+            if (currentPath === targetPath) {
+                // If we are already on the dashboard page
+                window.location.hash = targetHash
+
+                // Force a hashchange event manually in case the browser doesn't trigger it 
+                // (e.g. if the hash is technically the same but we want to re-trigger scrolling)
+                window.dispatchEvent(new HashChangeEvent('hashchange'))
             } else {
                 // Otherwise navigate to the dashboard page with the hash
-                router.push(`/dashboard#paper-${notification.paper_id}`)
+                router.push(`${targetPath}${targetHash}`)
             }
         }
     }
