@@ -341,7 +341,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 w-full min-w-0 overflow-x-hidden">
+            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 w-full min-w-0 overflow-x-hidden min-h-0">
                 {selectedContact ? (
                     <>
                         {/* Chat Header */}
@@ -375,7 +375,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                         </div>
 
                         {/* Messages List */}
-                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900 overscroll-contain w-full">
+                        {/* Messages List */}
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900 overscroll-contain w-full min-h-0">
                             {messages.length === 0 ? (
                                 <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                                     <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
