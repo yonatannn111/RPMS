@@ -95,14 +95,25 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
                     window.location.hash = ''
                 }
 
-                // Small timeout to ensure browser registers the change between clear and set
+                // Slightly longer timeout to ensure browser registers the change between clear and set
                 setTimeout(() => {
                     window.location.hash = `paper-${notification.paper_id}`
-                }, 10)
+                }, 100)
             } else {
                 // Navigate to the page with the hash
                 router.push(`${targetPath}#paper-${notification.paper_id}`)
             }
+            return
+        }
+
+        // Handle navigation based on notification content (Chat fallback)
+        const isChatMessage = notification.message.toLowerCase().includes('message') ||
+            notification.message.toLowerCase().includes('comment')
+
+        if (isChatMessage) {
+            setShowNotifications(false)
+            router.push('/chat')
+            return
         }
     }
 

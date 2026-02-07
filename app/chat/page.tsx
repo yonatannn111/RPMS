@@ -30,14 +30,12 @@ export default function ChatPage() {
     if (!user) return null
 
     return (
-        <div className="h-screen h-[100svh] h-[100dvh] w-full max-w-[100vw] flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
-            <div className="flex-shrink-0 w-full max-w-full">
+        <div className="h-screen h-[100svh] w-full flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
+            <div className="flex-shrink-0 w-full z-20">
                 <Header user={user} title="Messages" onLogout={logout} />
             </div>
-            <main className="flex-1 w-full max-w-full overflow-hidden flex flex-col p-0">
-                <div className="w-full h-full flex-1 overflow-hidden relative">
-                    <ChatInterface currentUser={user} />
-                </div>
+            <main className="flex-1 w-full relative overflow-hidden flex flex-col">
+                <ChatInterface currentUser={user} />
             </main>
         </div>
     )
