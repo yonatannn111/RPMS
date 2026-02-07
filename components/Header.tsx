@@ -68,42 +68,40 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
 
     const handleNotificationClick = async (notification: Notification) => {
         console.log('[Header] Notification clicked:', notification)
-        // Mark as read
+
+        // Mark as read if not already
         if (!notification.is_read) {
             console.log('[Header] Marking notification as read:', notification.id)
             const result = await markNotificationRead(notification.id)
-            console.log('[Header] Mark as read result:', result)
             if (result.success) {
-                console.log('[Header] Successfully marked as read, updating state...')
-                // Update local state immediately for better UX
+                // Update local state immediately
                 setNotifications(prev => prev.map(n =>
                     n.id === notification.id ? { ...n, is_read: true } : n
                 ))
-                // Also update unread count locally
                 setUnreadCount(prev => Math.max(0, prev - 1))
-            } else {
-                console.error('[Header] Failed to mark as read:', result.error)
             }
         }
 
-        // Navigate to dashboard page
+        // Navigate to dashboard page if there's a paper ID
         if (notification.paper_id) {
             setShowNotifications(false)
 
             const targetPath = '/dashboard'
-            const currentPath = window.location.pathname
-            const targetHash = `#paper-${notification.paper_id}`
 
-            if (currentPath === targetPath) {
-                // If we are already on the dashboard page
-                window.location.hash = targetHash
+            // If we're already on the dashboard, we need to force the hash change event
+            if (window.location.pathname === targetPath) {
+                // First clear the hash if it matches (to ensure change event fires)
+                if (window.location.hash === `#paper-${notification.paper_id}`) {
+                    window.location.hash = ''
+                }
 
-                // Force a hashchange event manually in case the browser doesn't trigger it 
-                // (e.g. if the hash is technically the same but we want to re-trigger scrolling)
-                window.dispatchEvent(new HashChangeEvent('hashchange'))
+                // Small timeout to ensure browser registers the change between clear and set
+                setTimeout(() => {
+                    window.location.hash = `paper-${notification.paper_id}`
+                }, 10)
             } else {
-                // Otherwise navigate to the dashboard page with the hash
-                router.push(`${targetPath}${targetHash}`)
+                // Navigate to the page with the hash
+                router.push(`${targetPath}#paper-${notification.paper_id}`)
             }
         }
     }

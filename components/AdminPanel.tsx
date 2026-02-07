@@ -641,6 +641,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
                       {approvedPapers.map(paper => (
                         <div
                           key={paper.id}
+                          id={`paper-${paper.id}`}
                           onClick={() => setSelectedPaper(paper)}
                           className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10 rounded-lg p-4 transition-all duration-300 hover:shadow-md cursor-pointer"
                         >
@@ -674,6 +675,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
                       {rejectedPapers.map(paper => (
                         <div
                           key={paper.id}
+                          id={`paper-${paper.id}`}
                           onClick={() => setSelectedPaper(paper)}
                           className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 rounded-lg p-4 transition-all duration-300 hover:shadow-md cursor-pointer"
                         >

@@ -136,21 +136,36 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
 
   const fetchData = async () => {
     try {
-      const papersResult = await getPapers()
-      const reviewsResult = await getReviews()
-
-      if (papersResult.success && papersResult.data) {
-        console.log('[EditorPanel] All papers from API:', papersResult.data)
-        // Filter submitted papers (don't filter out reviewed ones)
-        const submittedPapers = papersResult.data.filter((paper: Paper) =>
-          paper.status === 'submitted' || paper.status === 'under_review' || paper.status === 'recommended_for_publication'
-        )
-        console.log('[EditorPanel] Filtered submitted papers:', submittedPapers)
-        setPapers(submittedPapers)
-      }
+      const [papersResult, reviewsResult] = await Promise.all([
+        getPapers(),
+        getReviews()
+      ])
 
       if (reviewsResult.success && reviewsResult.data) {
         setReviews(reviewsResult.data)
+      }
+
+      if (papersResult.success && papersResult.data) {
+        console.log('[EditorPanel] All papers from API:', papersResult.data)
+
+        const allReviews = reviewsResult.success && reviewsResult.data ? reviewsResult.data : []
+
+        // Filter papers:
+        // 1. Papers that need review (submitted, under_review)
+        // 2. Papers already reviewed by this user (regardless of status)
+        // 3. Papers recommended for publication (waiting for admin)
+        const relevantPapers = papersResult.data.filter((paper: Paper) => {
+          const isActive = paper.status === 'submitted' ||
+            paper.status === 'under_review' ||
+            paper.status === 'recommended_for_publication'
+
+          const hasReviewed = allReviews.some(r => r.paper_id === paper.id && r.reviewer_id === user.id)
+
+          return isActive || hasReviewed
+        })
+
+        console.log('[EditorPanel] Filtered relevant papers:', relevantPapers)
+        setPapers(relevantPapers)
       }
 
     } catch (error) {
