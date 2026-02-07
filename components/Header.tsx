@@ -67,7 +67,7 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
     }
 
     const handleNotificationClick = async (notification: Notification) => {
-        console.log('[Header] Notification clicked:', notification)
+        console.log('[Header] Notification clicked FULL OBJECT:', JSON.stringify(notification, null, 2))
 
         // Mark as read if not already
         if (!notification.is_read) {
@@ -84,12 +84,14 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
 
         // Navigate to dashboard page if there's a paper ID
         if (notification.paper_id) {
+            console.log('[Header] Notification has paper_id:', notification.paper_id)
             setShowNotifications(false)
 
             const targetPath = '/dashboard'
 
             // If we're already on the dashboard, we need to force the hash change event
             if (window.location.pathname === targetPath) {
+                console.log('[Header] Already on dashboard, forcing hash update')
                 // First clear the hash if it matches (to ensure change event fires)
                 if (window.location.hash === `#paper-${notification.paper_id}`) {
                     window.location.hash = ''
@@ -97,24 +99,33 @@ export default function Header({ user, title, onLogout }: HeaderProps) {
 
                 // Slightly longer timeout to ensure browser registers the change between clear and set
                 setTimeout(() => {
+                    console.log('[Header] Setting hash to:', `paper-${notification.paper_id}`)
                     window.location.hash = `paper-${notification.paper_id}`
                 }, 100)
             } else {
+                console.log('[Header] Navigating to dashboard with hash:', `${targetPath}#paper-${notification.paper_id}`)
                 // Navigate to the page with the hash
                 router.push(`${targetPath}#paper-${notification.paper_id}`)
             }
             return
+        } else {
+            console.log('[Header] Notification DOES NOT have paper_id')
         }
 
         // Handle navigation based on notification content (Chat fallback)
         const isChatMessage = notification.message.toLowerCase().includes('message') ||
             notification.message.toLowerCase().includes('comment')
 
+        console.log('[Header] isChatMessage check:', isChatMessage)
+
         if (isChatMessage) {
+            console.log('[Header] Navigating to /chat')
             setShowNotifications(false)
             router.push('/chat')
             return
         }
+
+        console.log('[Header] No navigation action taken for this notification.')
     }
 
     const unreadNotificationCount = notifications.filter(n => !n.is_read).length

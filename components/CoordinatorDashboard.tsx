@@ -80,7 +80,7 @@ export default function CoordinatorDashboard({ user, onLogout }: CoordinatorDash
 
       if (papersResult.success && papersResult.data) {
         const approvedPapers = papersResult.data.filter((paper: Paper) =>
-          paper.status === 'approved' || paper.status === 'published'
+          paper.status === 'approved' || paper.status === 'published' || paper.status === 'recommended_for_publication'
         )
         setPapers(approvedPapers)
       }
