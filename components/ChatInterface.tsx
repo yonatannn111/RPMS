@@ -264,7 +264,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 sm:rounded-lg shadow-lg overflow-hidden h-full flex border-x dark:border-gray-700 w-full max-w-full relative mx-auto">
+        <div className="bg-white dark:bg-gray-800 sm:rounded-lg shadow-lg overflow-hidden h-full flex flex-1 border-x dark:border-gray-700 w-full max-w-full relative mx-auto">
             <ForwardModal
                 isOpen={isForwardModalOpen}
                 onClose={() => setIsForwardModalOpen(false)}
@@ -341,7 +341,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 w-full min-w-0 overflow-x-hidden min-h-0">
+            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 w-full min-w-0 overflow-x-hidden min-h-0 h-full">
                 {selectedContact ? (
                     <>
                         {/* Chat Header */}
