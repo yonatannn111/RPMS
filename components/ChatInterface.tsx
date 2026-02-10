@@ -23,7 +23,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const messageInputRef = useRef<HTMLInputElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const messageInputRef = useRef<HTMLTextAreaElement>(null)
     const prevMessagesLengthRef = useRef(0)
 
     const searchParams = useSearchParams()
@@ -160,6 +161,22 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         setUploadedFileData(null)
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
+        }
+    }
+
+    // Auto-resize textarea
+    useEffect(() => {
+        const textarea = messageInputRef.current
+        if (textarea) {
+            textarea.style.height = 'auto'
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`
+        }
+    }, [newMessage])
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSendMessage(e as any)
         }
     }
 
@@ -547,14 +564,15 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                     </button>
 
                                     {/* Message input */}
-                                    <input
-                                        type="text"
+                                    <textarea
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={handleKeyDown}
                                         placeholder={uploading ? "Uploading..." : "Type a message..."}
                                         disabled={uploading || sending}
                                         ref={messageInputRef}
-                                        className="flex-1 p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 min-w-0"
+                                        rows={1}
+                                        className="flex-1 p-2.5 sm:p-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 min-w-0 resize-none max-h-[150px] overflow-y-auto leading-normal"
                                     />
 
                                     {/* Send button */}

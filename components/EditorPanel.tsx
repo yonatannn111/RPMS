@@ -112,15 +112,15 @@ export default function EditorPanel({ user, onLogout }: EditorPanelProps) {
           // Clear hash so it doesn't re-trigger
           window.history.replaceState(null, '', window.location.pathname + window.location.search)
 
-          // Scroll to it
+          // Scroll to it - ensure it's rendered first
           setTimeout(() => {
             const element = document.getElementById(`paper-${paperId}`)
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              element.classList.add('ring-2', 'ring-red-500')
-              setTimeout(() => element.classList.remove('ring-2', 'ring-red-500'), 3000)
+              element.classList.add('ring-4', 'ring-red-500', 'ring-offset-2', 'rounded-lg')
+              setTimeout(() => element.classList.remove('ring-4', 'ring-red-500', 'ring-offset-2'), 5000)
             }
-          }, 100)
+          }, 300)
         }
       }
     }

@@ -73,7 +73,7 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
         const paper = papers.find(p => p.id === paperId)
         if (paper) {
           // Find which tab the paper belongs to
-          const isPending = paper.status === 'recommended_for_publication'
+          const isPending = paper.status === 'submitted' || paper.status === 'recommended_for_publication' || (paper.status === 'under_review' && paper.reviews.length > 0)
           const isValidated = paper.pi_name || paper.institution_code
 
           if (isPending) setActiveTab('reviewed')
@@ -90,10 +90,10 @@ export default function AdminPanel({ user, onLogout }: AdminPanelProps) {
             const element = document.getElementById(`paper-${paperId}`)
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              element.classList.add('ring-2', 'ring-red-500')
-              setTimeout(() => element.classList.remove('ring-2', 'ring-red-500'), 3000)
+              element.classList.add('ring-4', 'ring-red-500', 'ring-offset-2', 'rounded-lg')
+              setTimeout(() => element.classList.remove('ring-4', 'ring-red-500', 'ring-offset-2'), 5000)
             }
-          }, 100)
+          }, 300)
         }
       }
     }
